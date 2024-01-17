@@ -32,10 +32,7 @@ export class ProductsService {
   }
 
   async getProduct(productId: string) {
-    const product = await this.productModel.findById(productId).exec();
-    if (!product) {
-      throw new NotFoundException('could not find product');
-    }
+    const product = await this.findProduct(productId);
     return {
       id: product.id,
       title: product.title,
@@ -50,25 +47,35 @@ export class ProductsService {
     description: string,
     price: number,
   ) {
-    const product = await this.productModel.findByIdAndUpdate(productId, {
-      title,
-      description,
-      price,
-    });
-    return product;
+    const updatedProduct = await this.findProduct(productId);
+    if (title) {
+      updatedProduct.title = title;
+    }
+    if (description) {
+      updatedProduct.description = description;
+    }
+    if (price) {
+      updatedProduct.price = price;
+    }
+    updatedProduct.save();
+    return updatedProduct;
   }
 
   deleteProduct(id: string) {
-    const index = this.findProduct(id)[1];
-    this.products.splice(index, 1);
+    // const index = this.findProduct(id)[1];
+    // this.products.splice(index, 1);
   }
 
-  private findProduct(id: string): [Product, number] {
-    const productIndex = this.products.findIndex((prod) => prod.id === id);
-    const product = this.products[productIndex];
+  private async findProduct(id: string) {
+    let product;
+    try {
+      product = await this.productModel.findById(id);
+    } catch (error) {
+      throw new NotFoundException('could not find product');
+    }
     if (!product) {
       throw new NotFoundException('could not find product');
     }
-    return [product, productIndex];
+    return product;
   }
 }
